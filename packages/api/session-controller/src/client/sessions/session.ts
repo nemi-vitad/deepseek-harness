@@ -692,7 +692,8 @@ export class Session implements SessionFace {
       this.notifier.markDirty()
       return
     }
-    if (result?.type === 'publish' && this.appendLive(result.entry)) {
+    if (result?.type === 'publish') {
+      this.appendLive(result.entry)
       this.notifier.markDirty()
     } else if (result?.type === 'transient') {
       this.eventSource.append(result.entry)
@@ -707,18 +708,28 @@ export class Session implements SessionFace {
     this.eventSource.prepend(entries, hasMore)
   }
 
-  /** Append one stream-validated live event. */
-  private appendLive(entry: SessionLiveEventEntry): boolean {
+  /**
+   * Append one stream-validated live event and mark the subscribed view
+   * dirty. Every event reaching this point is new, visible content for a
+   * subscriber — a turn, a slash-command lifecycle marker (`command/run` /
+   * `command/done`), a compaction marker, and so on — so this always
+   * requests a re-render. (This used to report a change only for a queue
+   * mutation or the session's first `turn/start`; any other live event —
+   * including a command's own result — landed in `eventSource` without
+   * ever telling a subscriber to look, so it silently didn't render until
+   * something else happened to mark the view dirty. `Notifier` already
+   * coalesces same-tick `markDirty()` calls into one microtask flush, so
+   * this costs nothing extra.)
+   */
+  private appendLive(entry: SessionLiveEventEntry): void {
     const event = entry.event
-    const awaitingFirstTurn = this.firstPromptPendingTurn
     if (event.type === 'turn/start') this.firstPromptPendingTurn = false
-    const queueChanged = this.queueMirror.acceptDurable(event)
+    this.queueMirror.acceptDurable(event)
     this.eventSource.append(entry)
     // After the feed append: the conversation assembly's animation frame is
     // registered by the feed subscribers above, so the echo-retirement frame
     // scheduled here always runs after the durable node became renderable.
     this.observeSubmissionEvent(event)
-    return queueChanged || awaitingFirstTurn !== this.firstPromptPendingTurn
   }
 
   /** Retire the matching echo when a durable browser-prompt `user/message` becomes visible. */
