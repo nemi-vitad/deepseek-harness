@@ -4,6 +4,7 @@ node_modules/
 lib/
 *.tsbuildinfo
 pnpm-debug.log
+dsh-app.log
 .pnpm-store/
 .cache/
 examples/*/*.jsonl
@@ -19,6 +20,7 @@ coverage/
 oxlint-contract-*.ts
 .humanize/
 tmp/
+_tmp_6_*
 .claude/commands/
 .claude/launch.json
 .claude/settings.json
