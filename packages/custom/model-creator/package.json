@@ -1,6 +1,6 @@
 {
   "name": "@deepseek-ai/dsh-model-creator",
-  "description": "Custom /model-creator slash command: given an n8n workflow link, resolves its webhook via n8n's own API, delegates response-shape detection to a one-shot subagent, scaffolds and builds a new DSH custom-model bridge package for it, registers the model, verifies the bridge's own answer-fetching logic directly against the live webhook, and reports back the manual steps left to finish (enter the generated key, restart, and select the model).",
+  "description": "Custom /model-creator slash command: given an n8n webhook URL, matches it to its workflow and reads its definition via n8n's own API, delegates response-shape detection to a one-shot subagent, scaffolds and builds a new DSH custom-model bridge package for it, registers the model, verifies the bridge's own answer-fetching logic directly against the live webhook, and reports back the manual steps left to finish (enter the generated key, restart, and select the model).",
   "version": "0.0.1",
   "private": true,
   "type": "module",

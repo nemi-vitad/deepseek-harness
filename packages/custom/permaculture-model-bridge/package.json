@@ -1,0 +1,27 @@
+{
+  "name": "@deepseek-ai/dsh-permaculture-model-bridge",
+  "description": "Local OpenAI Chat Completions-compatible SSE route, registered on the Web host's own HTTP server, that lets dsH's model picker call the n8n Permaculture Ethics & Principles Agent webhook directly: does one deterministic, non-streaming fetch to the webhook and wraps its grounded answer as a chat-completion chunk stream, since n8n's own webhook streaming mode cannot emit that wire format itself.",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "license": "MIT",
+  "peerDependencies": {
+    "@deepseek-ai/dsh-host-webserver": "workspace:^",
+    "@deepseek-ai/dsh-credentials": "workspace:^",
+    "@deepseek-ai/cordis": "workspace:^"
+  },
+  "devDependencies": {
+    "@deepseek-ai/dsh-host-webserver": "workspace:^",
+    "@deepseek-ai/dsh-credentials": "workspace:^",
+    "@deepseek-ai/cordis": "workspace:^"
+  }
+}
