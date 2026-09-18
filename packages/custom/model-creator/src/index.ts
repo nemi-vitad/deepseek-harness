@@ -603,11 +603,18 @@ ${parseBody
   .join('\n')}
 }
 
-async function fetchGroundedAnswer(config: ResolvedConfig, question: string): Promise<string> {
+async function fetchGroundedAnswer(
+  config: ResolvedConfig,
+  question: string,
+  sessionId: string | undefined,
+): Promise<string> {
   const response = await fetch(config.webhookUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chatInput: question }),
+    body: JSON.stringify({
+      chatInput: question,
+      ...sessionId === undefined ? {} : { sessionId },
+    }),
   })
   if (!response.ok) throw new Error(\`n8n webhook returned HTTP \${response.status}\`)
   const raw = await response.text()
@@ -625,17 +632,23 @@ function readRequestBody(req: IncomingMessage): Promise<string> {
   })
 }
 
-/** Join the \`text\` parts of an OpenAI-style message \`content\` field, which may be a plain string or a content-part array. */
+/**
+ * Parse an OpenAI-style message 'content' field (plain string or
+ * content-part array) into its text. Only text parts are used -- this
+ * bridge sends only plain text to n8n.
+ */
 function extractTextContent(content: unknown): string | undefined {
   if (typeof content === 'string') return content
   if (!Array.isArray(content)) return undefined
-  const parts: string[] = []
+
+  const textParts: string[] = []
   for (const part of content) {
     if (part === null || typeof part !== 'object') continue
     const record = part as Record<string, unknown>
-    if (record.type === 'text' && typeof record.text === 'string') parts.push(record.text)
+    if (record.type === 'text' && typeof record.text === 'string') textParts.push(record.text)
   }
-  return parts.length === 0 ? undefined : parts.join('\\n')
+
+  return textParts.length === 0 ? undefined : textParts.join('\\n')
 }
 
 /**
@@ -656,6 +669,10 @@ function isSyntheticContext(text: string): boolean {
   return SYNTHETIC_CONTEXT_PREFIXES.some(prefix => text.startsWith(prefix))
 }
 
+/**
+ * Find the person's actual last message text, skipping synthetic context
+ * messages.
+ */
 function extractLastUserText(messages: unknown): string | undefined {
   if (!Array.isArray(messages)) return undefined
   for (let i = messages.length - 1; i >= 0; i -= 1) {
@@ -802,6 +819,23 @@ function writeSseAnswer(res: ServerResponse, modelId: string, answer: string): v
   res.end()
 }
 
+/**
+ * DSH's own stable per-conversation identity, when the model config for this
+ * bridge turns on long prompt-cache retention (\`cacheRetention: 'long'\` plus
+ * \`compat.supportsLongCacheRetention: true\` on the model entry in
+ * \`settings.yaml\`) -- pi-ai then puts \`this.session.id\` (clamped to 64
+ * chars) on every request as \`prompt_cache_key\`, a field this bridge doesn't
+ * otherwise use for caching but repurposes here as a stable session key, so
+ * a stateful n8n workflow (Data Table session lookup, agent memory) can
+ * actually continue a conversation turn to turn instead of restarting it on
+ * every message. Absent (config not set, or an older DSH build) rather than
+ * an error -- the bridge still answers, just without continuity, same as
+ * before this existed.
+ */
+function extractSessionId(body: Record<string, unknown>): string | undefined {
+  return typeof body.prompt_cache_key === 'string' && body.prompt_cache_key !== '' ? body.prompt_cache_key : undefined
+}
+
 async function handleChatCompletions(ctx: Context, config: ResolvedConfig, req: IncomingMessage, res: ServerResponse): Promise<void> {
   if (req.method !== 'POST') { res.writeHead(405).end(); return }
   if (req.headers.authorization !== \`Bearer \${config.apiKey}\`) { res.writeHead(401).end(); return }
@@ -813,6 +847,7 @@ async function handleChatCompletions(ctx: Context, config: ResolvedConfig, req: 
   }
   const question = extractLastUserText(body.messages)
   if (!question) { res.writeHead(400).end(); return }
+  const sessionId = extractSessionId(body)
 
   // Session-title requests aren't real questions for the automation --
   // answer them locally (or via a real model, per \`titleMode\`, falling back
@@ -827,7 +862,7 @@ async function handleChatCompletions(ctx: Context, config: ResolvedConfig, req: 
   }
 
   try {
-    const answer = await fetchGroundedAnswer(config, question)
+    const answer = await fetchGroundedAnswer(config, question, sessionId)
     writeSseAnswer(res, config.modelId, answer)
   } catch (error) {
     res.writeHead(502, { 'Content-Type': 'application/json' }).end(JSON.stringify({ error: { message: String(error), type: 'upstream_error' } }))
