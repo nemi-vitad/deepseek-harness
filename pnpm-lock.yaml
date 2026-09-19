@@ -4535,6 +4535,18 @@ importers:
         specifier: workspace:^
         version: link:../../util/launch-environment
 
+  packages/custom/information-support-agent:
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+      '@deepseek-ai/dsh-credentials':
+        specifier: workspace:^
+        version: link:../../credentials/credentials
+      '@deepseek-ai/dsh-host-webserver':
+        specifier: workspace:^
+        version: link:../../host/webserver
+
   packages/custom/model-creator:
     dependencies:
       yaml:
