@@ -4575,6 +4575,18 @@ importers:
         specifier: workspace:^
         version: link:../../core/tools
 
+  packages/custom/n8n-design:
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+      '@deepseek-ai/dsh-credentials':
+        specifier: workspace:^
+        version: link:../../credentials/credentials
+      '@deepseek-ai/dsh-host-webserver':
+        specifier: workspace:^
+        version: link:../../host/webserver
+
   packages/custom/permaculture-command:
     dependencies:
       zod:

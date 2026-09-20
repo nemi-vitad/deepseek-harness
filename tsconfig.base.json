@@ -308,6 +308,7 @@
       "@deepseek-ai/dsh-mcp-client": ["./packages/mcp/mcp-client/src"],
       "@deepseek-ai/dsh-message-feedback": ["./packages/feedback/message-feedback/src"],
       "@deepseek-ai/dsh-model-creator": ["./packages/custom/model-creator/src"],
+      "@deepseek-ai/dsh-n8n-design": ["./packages/custom/n8n-design/src"],
       "@deepseek-ai/dsh-native-command": ["./packages/util/native-command/src"],
       "@deepseek-ai/dsh-output-retention": ["./packages/util/output-retention/src"],
       "@deepseek-ai/dsh-permaculture-command": ["./packages/custom/permaculture-command/src"],
