@@ -4587,6 +4587,18 @@ importers:
         specifier: workspace:^
         version: link:../../host/webserver
 
+  packages/custom/n8n-implementor:
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+      '@deepseek-ai/dsh-credentials':
+        specifier: workspace:^
+        version: link:../../credentials/credentials
+      '@deepseek-ai/dsh-host-webserver':
+        specifier: workspace:^
+        version: link:../../host/webserver
+
   packages/custom/n8n-support-agent:
     devDependencies:
       '@deepseek-ai/cordis':
