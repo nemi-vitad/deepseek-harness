@@ -119,19 +119,32 @@ function resolveConfig(config: unknown): PermacultureCommandConfig {
   const record = config as Record<string, unknown>
   const webhookUrl = record.webhookUrl
   if (typeof webhookUrl !== 'string' || webhookUrl.trim() === '') {
-    throw new Error('PermacultureCommandConfig needs a non-empty string `webhookUrl`')
+    throw new Error(
+      'PermacultureCommandConfig needs a non-empty string `webhookUrl`',
+    )
   }
   const headers = record.headers
-  if (headers !== undefined && (typeof headers !== 'object' || headers === null || Array.isArray(headers))) {
-    throw new Error('PermacultureCommandConfig `headers`, if given, must be an object of string values')
+  if (
+    headers !== undefined &&
+    (typeof headers !== 'object' || headers === null || Array.isArray(headers))
+  ) {
+    throw new Error(
+      'PermacultureCommandConfig `headers`, if given, must be an object of string values',
+    )
   }
-  const unknownKeys = Object.keys(record).filter(key => key !== 'webhookUrl' && key !== 'headers')
+  const unknownKeys = Object.keys(record).filter(
+    key => key !== 'webhookUrl' && key !== 'headers',
+  )
   if (unknownKeys.length > 0) {
-    throw new Error(`PermacultureCommandConfig has unknown key(s) ${unknownKeys.join(', ')} — config is { webhookUrl, headers? }`)
+    throw new Error(
+      `PermacultureCommandConfig has unknown key(s) ${unknownKeys.join(', ')} — config is { webhookUrl, headers? }`,
+    )
   }
   // exactOptionalPropertyTypes: only include `headers` at all when it was
   // actually given — assigning the key `undefined` is a type error here.
-  return headers === undefined ? { webhookUrl } : { webhookUrl, headers: headers as Record<string, string> }
+  return headers === undefined
+    ? { webhookUrl }
+    : { webhookUrl, headers: headers as Record<string, string> }
 }
 
 /**
@@ -158,7 +171,10 @@ type FetchOutcome =
   | { kind: 'error'; text: string }
 
 /** Call the n8n webhook and interpret its response. Shared by the command and the follow-up tool. */
-async function fetchGroundedAnswer(config: PermacultureCommandConfig, question: string): Promise<FetchOutcome> {
+async function fetchGroundedAnswer(
+  config: PermacultureCommandConfig,
+  question: string,
+): Promise<FetchOutcome> {
   let response: Response
   try {
     response = await fetch(config.webhookUrl, {
@@ -190,7 +206,11 @@ async function fetchGroundedAnswer(config: PermacultureCommandConfig, question: 
     const data: unknown = JSON.parse(raw)
     if (typeof data === 'string') {
       answer = data
-    } else if (data !== null && typeof data === 'object' && typeof (data as Record<string, unknown>).output === 'string') {
+    } else if (
+      data !== null &&
+      typeof data === 'object' &&
+      typeof (data as Record<string, unknown>).output === 'string'
+    ) {
       answer = (data as Record<string, unknown>).output as string
     }
   } catch {
@@ -199,7 +219,10 @@ async function fetchGroundedAnswer(config: PermacultureCommandConfig, question: 
   answer = answer.trim()
 
   if (answer === '') {
-    return { kind: 'error', text: 'The Permaculture Ethics & Principles agent returned an empty response.' }
+    return {
+      kind: 'error',
+      text: 'The Permaculture Ethics & Principles agent returned an empty response.',
+    }
   }
 
   return { kind: 'answer', answer }
@@ -213,20 +236,28 @@ async function fetchGroundedAnswer(config: PermacultureCommandConfig, question: 
  * message row.
  */
 function relayAnswer(agent: Agent, question: string, answer: string): void {
-  agent.followup(createUserMessage({
-    content: [{ type: 'text', text: buildRelayInstruction(question, answer) }],
-    source: {
-      kind: 'plugin',
-      plugin: 'permaculture-command',
-      form: 'notice',
-      summary: boundContextSummary(`The user asked the Permaculture Ethics & Principles reference agent: "${question}"`),
-    },
-  }))
+  agent.followup(
+    createUserMessage({
+      content: [
+        { type: 'text', text: buildRelayInstruction(question, answer) },
+      ],
+      source: {
+        kind: 'plugin',
+        plugin: 'permaculture-command',
+        form: 'notice',
+        summary: boundContextSummary(
+          `The user asked the Permaculture Ethics & Principles reference agent: "${question}"`,
+        ),
+      },
+    }),
+  )
 }
 
-const permacultureThreadStateSchema: ZodType<PermacultureThreadState> = zod.object({
-  active: zod.boolean(),
-}).strict()
+const permacultureThreadStateSchema: ZodType<PermacultureThreadState> = zod
+  .object({
+    active: zod.boolean(),
+  })
+  .strict()
 
 /** Host-only projection of the logged `permaculture/thread` events. */
 const permacultureThreadProjectionDefinition = {
@@ -240,23 +271,26 @@ const permacultureThreadProjectionDefinition = {
     }
     return state
   },
-} satisfies Omit<ProjectionDefinition<'permacultureThread', PermacultureThreadState>, 'wire'>
+} satisfies Omit<
+  ProjectionDefinition<'permacultureThread', PermacultureThreadState>,
+  'wire'
+>
 
 /** Guidance included only while a thread is open. */
 function policySection(): string {
   return [
     'A Permaculture Ethics & Principles reference thread is open in this session (started by /permaculture-help).',
     `For on-topic follow-ups — including answering a clarifying question the reference agent asked — call the \`${ASK_PERMACULTURE_FOLLOWUP}\` tool with the follow-up as \`question\`, instead of answering yourself, declining, or asking the user to retype the command.`,
-    'That tool relays the reference agent\'s grounded answer directly to the user as your next reply; do not also answer in this turn, and never paraphrase or summarize what it relays.',
+    "That tool relays the reference agent's grounded answer directly to the user as your next reply; do not also answer in this turn, and never paraphrase or summarize what it relays.",
     'This only covers continuing this thread — an unrelated, off-topic question still gets no special handling.',
     'The user can close this thread with /permaculture-help off.',
   ].join(' ')
 }
 
-const ASK_PERMACULTURE_FOLLOWUP_DESCRIPTION
-  = 'Use only while a Permaculture Ethics & Principles thread is open. Ask the reference agent a follow-up question — '
-  + 'including answering its own clarifying question — and relay its grounded answer to the user. '
-  + 'Do not call this to start a brand-new, unrelated topic; use /permaculture-help for that.'
+const ASK_PERMACULTURE_FOLLOWUP_DESCRIPTION =
+  'Use only while a Permaculture Ethics & Principles thread is open. Ask the reference agent a follow-up question — ' +
+  'including answering its own clarifying question — and relay its grounded answer to the user. ' +
+  'Do not call this to start a brand-new, unrelated topic; use /permaculture-help for that.'
 
 /**
  * `ctx.permacultureCommand`: registers `/permaculture-help`, folds the
@@ -289,22 +323,29 @@ export class PermacultureCommandController extends Service {
     ctx.inject(['commands'], (commandCtx) => {
       commandCtx.commands.register({
         name: 'permaculture-help',
-        description: 'Ask the Permaculture Ethics & Principles reference agent (grounded in the reference document, via n8n)',
+        description:
+          'Ask the Permaculture Ethics & Principles reference agent (grounded in the reference document, via n8n)',
         input: { hint: '<question>|off' },
         handler: async ({ agent, rawInput }) => {
           const input = rawInput.trim()
 
           if (input === 'off') {
             if (!this.threadActive(agent.session)) {
-              return { kind: 'success', text: 'Permaculture thread is already closed.' }
+              return {
+                kind: 'success',
+                text: 'Permaculture thread is already closed.',
+              }
             }
-            agent.session.append('permaculture/thread', { active: false }, { ignorable: true })
+            agent.session.append('permaculture/thread', { active: false })
             return { kind: 'success', text: 'Permaculture thread closed.' }
           }
 
           const question = input
           if (question === '') {
-            return { kind: 'error', text: 'Usage: /permaculture-help <question>, or /permaculture-help off to close an open thread.' }
+            return {
+              kind: 'error',
+              text: 'Usage: /permaculture-help <question>, or /permaculture-help off to close an open thread.',
+            }
           }
 
           const outcome = await fetchGroundedAnswer(this.config, question)
@@ -313,68 +354,90 @@ export class PermacultureCommandController extends Service {
           }
 
           if (!this.threadActive(agent.session)) {
-            agent.session.append('permaculture/thread', { active: true }, { ignorable: true })
+            agent.session.append('permaculture/thread', { active: true })
           }
 
           relayAnswer(agent, question, outcome.answer)
 
           return {
             kind: 'success',
-            text: 'Fetched the grounded answer — relaying it as a reply below. '
-              + 'Follow-ups in this session go straight to the reference agent until you run /permaculture-help off.',
+            text:
+              'Fetched the grounded answer — relaying it as a reply below. ' +
+              'Follow-ups in this session go straight to the reference agent until you run /permaculture-help off.',
           }
         },
       })
     })
 
-    ctx.tools.register(defineTool({
-      name: ASK_PERMACULTURE_FOLLOWUP,
-      description: ASK_PERMACULTURE_FOLLOWUP_DESCRIPTION,
-      parameters: {
-        question: { type: 'string', required: true, description: 'The on-topic follow-up question to ask the reference agent.' },
-      },
-      output: {
-        schema: {
-          type: 'object',
-          additionalProperties: false,
-          properties: {
-            relayed: { type: 'boolean', const: true, required: true },
+    ctx.tools.register(
+      defineTool({
+        name: ASK_PERMACULTURE_FOLLOWUP,
+        description: ASK_PERMACULTURE_FOLLOWUP_DESCRIPTION,
+        parameters: {
+          question: {
+            type: 'string',
+            required: true,
+            description:
+              'The on-topic follow-up question to ask the reference agent.',
           },
         },
-        render: () => [{
-          type: 'text',
-          text: 'Relayed the grounded answer to the user directly in a new reply — do not repeat, summarize, or paraphrase it yourself; your turn is complete.',
-        }],
-      },
-      execute: async (args, exec) => {
-        const agent = exec.agent
-        if (agent === undefined) {
-          throw new Error(`${ASK_PERMACULTURE_FOLLOWUP} requires a calling agent (no session to relay into)`)
-        }
-        if (!this.threadActive(agent.session)) {
-          throw new Error(`${ASK_PERMACULTURE_FOLLOWUP} is only available while a Permaculture Ethics & Principles thread is open — start one with /permaculture-help <question>`)
-        }
-        const question = args.question.trim()
-        if (question === '') {
-          throw new Error(`${ASK_PERMACULTURE_FOLLOWUP} requires a non-empty question`)
-        }
-        const outcome = await fetchGroundedAnswer(this.config, question)
-        if (outcome.kind === 'error') {
-          throw new Error(outcome.text)
-        }
-        relayAnswer(agent, question, outcome.answer)
-        // The relay above is queued as its own fresh turn; conclude this one
-        // so the model does not also restate or paraphrase the answer here.
-        exec.concludeTurn()
-        return { relayed: true }
-      },
-    }))
+        output: {
+          schema: {
+            type: 'object',
+            additionalProperties: false,
+            properties: {
+              relayed: { type: 'boolean', const: true, required: true },
+            },
+          },
+          render: () => [
+            {
+              type: 'text',
+              text: 'Relayed the grounded answer to the user directly in a new reply — do not repeat, summarize, or paraphrase it yourself; your turn is complete.',
+            },
+          ],
+        },
+        execute: async (args, exec) => {
+          const agent = exec.agent
+          if (agent === undefined) {
+            throw new Error(
+              `${ASK_PERMACULTURE_FOLLOWUP} requires a calling agent (no session to relay into)`,
+            )
+          }
+          if (!this.threadActive(agent.session)) {
+            throw new Error(
+              `${ASK_PERMACULTURE_FOLLOWUP} is only available while a Permaculture Ethics & Principles thread is open — start one with /permaculture-help <question>`,
+            )
+          }
+          const question = args.question.trim()
+          if (question === '') {
+            throw new Error(
+              `${ASK_PERMACULTURE_FOLLOWUP} requires a non-empty question`,
+            )
+          }
+          const outcome = await fetchGroundedAnswer(this.config, question)
+          if (outcome.kind === 'error') {
+            throw new Error(outcome.text)
+          }
+          relayAnswer(agent, question, outcome.answer)
+          // The relay above is queued as its own fresh turn; conclude this one
+          // so the model does not also restate or paraphrase the answer here.
+          exec.concludeTurn()
+          return { relayed: true }
+        },
+      }),
+    )
   }
 
   /** Read the logged thread state, or fail at the first service access. */
   private threadActive(session: Session): boolean {
-    const state = this.ctx.sessionProjections.stateOf(session, 'permacultureThread')
-    if (state === undefined) throw new Error('permaculture-command requires the permacultureThread session projection')
+    const state = this.ctx.sessionProjections.stateOf(
+      session,
+      'permacultureThread',
+    )
+    if (state === undefined)
+      throw new Error(
+        'permaculture-command requires the permacultureThread session projection',
+      )
     return state.active
   }
 }
