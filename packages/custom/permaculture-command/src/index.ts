@@ -298,7 +298,7 @@ export class PermacultureCommandController extends Service {
             if (!this.threadActive(agent.session)) {
               return { kind: 'success', text: 'Permaculture thread is already closed.' }
             }
-            agent.session.append('permaculture/thread', { active: false }, { ignorable: true })
+            agent.session.append('permaculture/thread', { active: false })
             return { kind: 'success', text: 'Permaculture thread closed.' }
           }
 
@@ -313,7 +313,7 @@ export class PermacultureCommandController extends Service {
           }
 
           if (!this.threadActive(agent.session)) {
-            agent.session.append('permaculture/thread', { active: true }, { ignorable: true })
+            agent.session.append('permaculture/thread', { active: true })
           }
 
           relayAnswer(agent, question, outcome.answer)
